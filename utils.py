@@ -276,8 +276,9 @@ def latency_summary_by_semantic_model(df):
 
 def create_sf_intelligence_query_history(session, target_table="cortex_analytics.public.sf_intelligence_query_history"):
     """
-    Create or replace a table with Cortex Agent query history joined to query attribution.
+    Create a table with Cortex Agent query history joined to query attribution.
     Keeps last 30 days of queries with compute credits > 0 and cleans query text for matching.
+    Only creates the table if it doesn't exist to avoid expensive recreation.
 
     Parameters
     ----------
@@ -287,8 +288,38 @@ def create_sf_intelligence_query_history(session, target_table="cortex_analytics
         Fully qualified name of the target table.
     """
 
+    # Check if table exists first
+    table_parts = target_table.split('.')
+    table_name = table_parts[-1].upper()
+    schema_name = table_parts[-2].upper() if len(table_parts) > 1 else 'PUBLIC'
+    database_name = table_parts[-3].upper() if len(
+        table_parts) > 2 else 'CORTEX_ANALYTICS'
+
+    try:
+        # Check if table exists
+        result = session.sql(f"""
+            SELECT COUNT(*) as table_count 
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = '{schema_name}' 
+            AND TABLE_NAME = '{table_name}' 
+            AND TABLE_CATALOG = '{database_name}'
+        """).collect()
+
+        table_exists = result[0]['TABLE_COUNT'] > 0
+
+        if table_exists:
+            print(
+                f"Table {target_table} already exists. Skipping creation to avoid expensive recreation.")
+            print(
+                "To refresh data, consider running: ALTER TABLE {target_table} DROP ALL ROWS; then re-run this function.")
+            return
+
+    except Exception as e:
+        print(
+            f"Could not check if table exists: {e}. Proceeding with creation...")
+
     query = f"""
-    CREATE OR REPLACE TABLE {target_table} AS
+    CREATE TABLE {target_table} AS
     SELECT 
         qh.query_id,
         qh.query_text,
@@ -314,7 +345,68 @@ def create_sf_intelligence_query_history(session, target_table="cortex_analytics
     """
 
     session.sql(query).collect()
-    print(f"✅ Table {target_table} created/updated successfully.")
+    print(f"✅ Table {target_table} created successfully.")
+
+
+def refresh_sf_intelligence_query_history(session, target_table="cortex_analytics.public.sf_intelligence_query_history"):
+    """
+    Refresh the SF_INTELLIGENCE_QUERY_HISTORY table with the latest data.
+    This function will truncate and reload the table with fresh data.
+
+    Parameters
+    ----------
+    session : snowflake.snowpark.Session
+        Active Snowpark session.
+    target_table : str, optional
+        Fully qualified name of the target table.
+    """
+
+    print(f"🔄 Refreshing {target_table} with latest data...")
+
+    # First, truncate the existing table
+    try:
+        session.sql(f"TRUNCATE TABLE {target_table}").collect()
+        print(f"✅ Truncated existing data from {target_table}")
+    except Exception as e:
+        print(f"⚠️  Could not truncate table (may not exist): {e}")
+
+    # Insert fresh data
+    insert_query = f"""
+    INSERT INTO {target_table}
+    SELECT 
+        qh.query_id,
+        qh.query_text,
+        qh.start_time,
+        qh.total_elapsed_time,
+        qh.warehouse_name,
+        qh.user_name,
+        qah.credits_attributed_compute,
+        -- Clean the generated SQL for matching
+        TRIM(REGEXP_REPLACE(
+            REGEXP_REPLACE(
+                REGEXP_REPLACE(qh.query_text, '--[^\\n]*\\n', '\\n'),
+                '/\\*.*?\\*/', ' '
+            ),
+            '\\s+', ' '
+        )) AS cleaned_query_text
+    FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY qh
+    JOIN SNOWFLAKE.ACCOUNT_USAGE.QUERY_ATTRIBUTION_HISTORY qah 
+        ON qh.query_id = qah.query_id
+    WHERE qh.query_tag = 'cortex-agent'
+      AND qh.start_time >= DATEADD(DAY, -30, CURRENT_TIMESTAMP())
+      AND qah.credits_attributed_compute > 0
+    """
+
+    try:
+        session.sql(insert_query).collect()
+        print(
+            f"✅ Table {target_table} refreshed successfully with latest data.")
+    except Exception as e:
+        print(f"❌ Error refreshing table: {e}")
+        # If insert fails, try to recreate the table completely
+        print("🔄 Attempting to recreate table...")
+        session.sql(f"DROP TABLE IF EXISTS {target_table}").collect()
+        create_sf_intelligence_query_history(session, target_table)
 
 
 def user_activity_by_semantic_model(df):

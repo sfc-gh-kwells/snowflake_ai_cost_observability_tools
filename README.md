@@ -32,9 +32,10 @@ This toolkit is designed to run within Snowflake environments (Snowpark notebook
 #### Option 2: Snowflake Notebook (Recommended for Development)
 1. **Upload the notebook** `setup_and_populate.ipynb` to your Snowflake account
 2. **Run all cells** in the notebook to:
-   - Create database schema (tables, views, procedures)
-   - Automatically discover and populate Cortex Analyst logs
+   - Create database schema (tables, views, procedures) - only if they don't exist
+   - Automatically discover and populate Cortex Analyst logs - skips existing data
    - Verify the setup with sample queries
+   - **Cost-efficient**: Avoids expensive table recreation and duplicate data processing
 
 #### Option 3: Manual Setup
 1. **Run the SQL setup script** to create the necessary database objects:
