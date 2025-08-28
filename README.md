@@ -19,17 +19,37 @@ This toolkit is designed to run within Snowflake environments (Snowpark notebook
 - `snowflake.snowpark`
 
 ### Setup
-1. **Run the SQL setup script** to create the necessary tables and views:
+
+#### Option 1: Git Integration (Recommended for Production)
+1. **Run the Git integration setup** to deploy directly from GitHub:
+   ```sql
+   -- Execute the git_integration_setup.sql script in your Snowflake environment
+   -- This creates Git repository integration and deploys the Streamlit app
+   ```
+2. **Access the deployed Streamlit dashboard** in Snowsight > Apps > Streamlit
+3. **Create notebook from repository** using the Git-integrated setup_and_populate.ipynb
+
+#### Option 2: Snowflake Notebook (Recommended for Development)
+1. **Upload the notebook** `setup_and_populate.ipynb` to your Snowflake account
+2. **Run all cells** in the notebook to:
+   - Create database schema (tables, views, procedures)
+   - Automatically discover and populate Cortex Analyst logs
+   - Verify the setup with sample queries
+
+#### Option 3: Manual Setup
+1. **Run the SQL setup script** to create the necessary database objects:
    ```sql
    -- Execute the setup.sql script in your Snowflake environment
    -- This creates tables, views, and stored procedures
    ```
 
-2. **Import the utility functions** in your Python environment
+2. **Manually populate data** using the utility functions in a Python environment
 
 ## Files Included
 
-- **`setup.sql`** - Complete SQL setup script that creates tables, views, stored procedures, and budget alerting system
+- **`git_integration_setup.sql`** - Git integration setup for direct deployment from GitHub repository
+- **`setup_and_populate.ipynb`** - Snowflake notebook that sets up the complete toolkit and populates data
+- **`setup.sql`** - Complete SQL setup script with views, stored procedures, and budget alerting system
 - **`utils.py`** - Python utility functions for data analysis and processing
 - **`streamlit_app.py`** - Comprehensive Streamlit dashboard for AI cost analysis
 - **`environment.yml`** - Snowflake environment dependencies
@@ -127,6 +147,33 @@ The Streamlit dashboard provides:
 - **🔍 Detailed Cortex Analyst analysis** including query types, performance, user activity, and costs
 - **📈 Time series charts** showing usage trends over time
 - **🔎 Data explorer** with detailed breakdowns and filtering
+
+## Git Integration
+
+The toolkit includes comprehensive Git integration for seamless deployment and updates directly from the GitHub repository.
+
+### Key Features
+- **Direct deployment** from GitHub repository to Snowflake
+- **Automatic Streamlit app creation** from repository files
+- **One-command updates** with repository refresh
+- **Version control integration** for production deployments
+- **Easy forking and customization** for organization-specific needs
+
+### Git Integration Benefits
+1. **Production Ready** - Deploy directly from source control
+2. **Always Up-to-Date** - Easy updates with `ALTER GIT REPOSITORY FETCH`
+3. **Consistent Deployments** - Same codebase across environments
+4. **Collaboration Friendly** - Easy sharing and contribution
+5. **Enterprise Grade** - Full audit trail and version control
+
+### Quick Git Setup
+```sql
+-- Run the Git integration setup
+-- This creates the repository integration and deploys the Streamlit app
+-- Execute the git_integration_setup.sql script in your Snowflake environment
+
+-- Access your dashboard at: Snowsight > Apps > Streamlit > AI_COST_TOOLKIT_DASHBOARD
+```
 
 ## Budget Alerting System
 

@@ -459,14 +459,99 @@ CALL AI_SERVICES_BUDGET_ALERT(
 -- CALL MINI_BUDGET_ON_CORTEX('MONTH', 10, 'MY_SLACK_NI');
 
 -- =====================================================
+-- 11. Git Integration Setup (Optional)
+-- =====================================================
+
+-- Create API integration with GitHub for the AI Cost Toolkit repository
+CREATE OR REPLACE API INTEGRATION GITHUB_INTEGRATION_AI_COST_TOOLKIT
+    API_PROVIDER = git_https_api
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-kwells/')
+    ENABLED = true
+    COMMENT = 'Git integration with Snowflake AI Cost Toolkit repository';
+
+-- Create the git repository integration
+CREATE OR REPLACE GIT REPOSITORY GITHUB_REPO_AI_COST_TOOLKIT
+    ORIGIN = 'https://github.com/sfc-gh-kwells/snowflake_ai_cost_observability_tools'
+    API_INTEGRATION = 'GITHUB_INTEGRATION_AI_COST_TOOLKIT'
+    COMMENT = 'Snowflake AI Cost Toolkit repository for cost observability and analysis';
+
+-- Grant usage on the git repository (adjust role as needed)
+-- GRANT USAGE ON GIT REPOSITORY GITHUB_REPO_AI_COST_TOOLKIT TO ROLE ACCOUNTADMIN;
+
+-- =====================================================
+-- 12. Deploy Streamlit App from Git Repository
+-- =====================================================
+
+-- Create Streamlit app directly from the git repository
+CREATE OR REPLACE STREAMLIT CORTEX_ANALYTICS.PUBLIC.AI_COST_TOOLKIT_DASHBOARD
+    ROOT_LOCATION = '@CORTEX_ANALYTICS.PUBLIC.GITHUB_REPO_AI_COST_TOOLKIT/branches/main'
+    MAIN_FILE = 'streamlit_app.py'
+    QUERY_WAREHOUSE = 'COMPUTE_WH'  -- Replace with your warehouse name
+    COMMENT = 'Comprehensive AI Cost Analysis Dashboard';
+
+-- Grant usage on the Streamlit app (adjust role as needed)
+-- GRANT USAGE ON STREAMLIT CORTEX_ANALYTICS.PUBLIC.AI_COST_TOOLKIT_DASHBOARD TO ROLE YOUR_ROLE;
+
+-- =====================================================
+-- 13. Alternative: Create Snowflake Notebook from Git
+-- =====================================================
+
+-- Create notebook from the setup_and_populate.ipynb file in the repository
+-- Note: This requires manual execution through Snowsight UI
+-- 1. Go to Snowsight > Projects > Notebooks
+-- 2. Create notebook from Git repository: @CORTEX_ANALYTICS.PUBLIC.GITHUB_REPO_AI_COST_TOOLKIT/branches/main/setup_and_populate.ipynb
+
+-- =====================================================
+-- 14. Refresh Repository Content
+-- =====================================================
+
+-- To update the repository with latest changes from GitHub:
+-- ALTER GIT REPOSITORY GITHUB_REPO_AI_COST_TOOLKIT FETCH;
+
+-- To check repository status:
+-- SHOW GIT BRANCHES IN GITHUB_REPO_AI_COST_TOOLKIT;
+-- SHOW GIT TAGS IN GITHUB_REPO_AI_COST_TOOLKIT;
+
+-- List files in the repository:
+-- LIST @CORTEX_ANALYTICS.PUBLIC.GITHUB_REPO_AI_COST_TOOLKIT/branches/main/;
+
+-- =====================================================
+-- 15. Alternative Deployment Commands
+-- =====================================================
+
+-- If you have additional SQL scripts in your repository, you can execute them:
+-- EXECUTE IMMEDIATE FROM @CORTEX_ANALYTICS.PUBLIC.GITHUB_REPO_AI_COST_TOOLKIT/branches/main/additional_setup.sql;
+
+-- To deploy utility functions, you can reference them directly from the repository:
+-- Example: Creating a function that uses the repository files
+-- CREATE OR REPLACE FUNCTION GET_UTILS_VERSION()
+-- RETURNS STRING
+-- LANGUAGE PYTHON
+-- RUNTIME_VERSION = '3.8'
+-- HANDLER = 'get_version'
+-- IMPORTS = ('@CORTEX_ANALYTICS.PUBLIC.GITHUB_REPO_AI_COST_TOOLKIT/branches/main/utils.py')
+-- AS
+-- $$
+-- def get_version():
+--     return "Snowflake AI Cost Toolkit v1.0"
+-- $$;
+
+-- =====================================================
 -- Setup Complete!
 -- =====================================================
 -- Your Snowflake AI Cost Toolkit is now ready to use.
 -- 
+-- Git Integration Features:
+-- • Direct deployment from GitHub repository
+-- • Automatic Streamlit app creation from repository
+-- • Easy updates with ALTER GIT REPOSITORY FETCH
+-- 
 -- Next steps:
--- 1. Use the Python utils.py functions to populate the CORTEX_ANALYST_LOGS table
--- 2. Run analysis using the provided views or Python functions
--- 3. Set up regular refresh of the query history data
+-- 1. Commit and push your changes to the GitHub repository
+-- 2. Use the notebook setup_and_populate.ipynb to populate data
+-- 3. Access the Streamlit dashboard for interactive analysis
 -- 4. Configure notification integrations for budget alerts
--- 5. Customize and enable the budget monitoring tasks
+-- 5. Set up automated monitoring tasks
+-- 
+-- Repository URL: https://github.com/sfc-gh-kwells/snowflake_ai_cost_observability_tools
 -- =====================================================
