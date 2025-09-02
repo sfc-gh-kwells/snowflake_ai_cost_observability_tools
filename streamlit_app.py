@@ -7,10 +7,12 @@ A comprehensive Streamlit dashboard for analyzing AI services costs and Cortex A
 import streamlit as st
 import pandas as pd
 import datetime
-from snowflake.snowpark.context import get_active_session
 
 # Import all utility functions
 from utils import (
+    # Session management
+    get_session,
+
     # Core Cortex Analyst functions
     fetch_semantic_model_paths,
     get_cortex_analyst_logs,
@@ -52,7 +54,7 @@ st.markdown(
 st.divider()
 
 # Initialize session
-session = get_active_session()
+session = get_session()
 
 # =====================================================
 # DATE RANGE SELECTION

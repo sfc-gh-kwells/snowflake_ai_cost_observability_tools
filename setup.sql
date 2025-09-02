@@ -31,7 +31,8 @@ USE SCHEMA PUBLIC;
 -- This table stores processed Cortex Analyst logs with
 -- additional computed fields for analysis.
 
-CREATE OR REPLACE TABLE CORTEX_ANALYST_LOGS (
+-- Create table only if it doesn't exist to avoid expensive recreation
+CREATE TABLE IF NOT EXISTS CORTEX_ANALYST_LOGS (
     TIMESTAMP                TIMESTAMP_NTZ,
     REQUEST_ID               STRING,
     SEMANTIC_MODEL_NAME      STRING,
@@ -56,8 +57,14 @@ CREATE OR REPLACE TABLE CORTEX_ANALYST_LOGS (
 -- =====================================================
 -- This table stores cleaned query history data joined with
 -- attribution data for cost analysis.
+-- Note: This is an expensive operation, only run if table doesn't exist
 
-CREATE OR REPLACE TABLE SF_INTELLIGENCE_QUERY_HISTORY AS
+-- Check if table exists first, then create only if needed
+-- Use the utility function create_sf_intelligence_query_history() instead
+-- for more efficient table creation with proper error handling.
+
+-- Manual creation (only if you need to create directly via SQL):
+CREATE TABLE IF NOT EXISTS SF_INTELLIGENCE_QUERY_HISTORY AS
 SELECT 
     qh.query_id,
     qh.query_text,

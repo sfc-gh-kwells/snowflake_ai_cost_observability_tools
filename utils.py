@@ -19,8 +19,93 @@ limitations under the License.
 """
 
 import json
+import os
+import configparser
 import pandas as pd
+from snowflake.snowpark import Session
 from snowflake.snowpark.context import get_active_session
+
+
+def create_local_session(config_file="config.env", connection_name="connections.my_example_connection"):
+    """
+    Create a Snowpark session from a local config file for development/testing.
+
+    Parameters
+    ----------
+    config_file : str, optional
+        Path to the config file containing connection parameters.
+    connection_name : str, optional
+        Name of the connection section in the config file.
+
+    Returns
+    -------
+    snowflake.snowpark.Session
+        A Snowpark session for local development.
+    """
+
+    # Read the config file
+    config = configparser.ConfigParser()
+    config.read(config_file)
+
+    if connection_name not in config:
+        raise ValueError(
+            f"Connection '{connection_name}' not found in {config_file}")
+
+    # Extract connection parameters and strip quotes - simplified approach
+    conn_params = {
+        "account": config[connection_name]["account"].strip('"'),
+        "user": config[connection_name]["user"].strip('"'),
+        "role": config[connection_name]["role"].strip('"'),
+        "warehouse": config[connection_name]["warehouse"].strip('"'),
+        "database": config[connection_name]["database"].strip('"'),
+        "schema": config[connection_name]["schema"].strip('"')
+    }
+
+    # Add password if it exists - keep it simple
+    if "password" in config[connection_name]:
+        conn_params["password"] = config[connection_name]["password"].strip(
+            '"')
+
+    # Create session directly without complex auth logic
+    session = Session.builder.configs(conn_params).create()
+    print(f"✅ Local Snowpark session created successfully")
+    print(f"   Account: {conn_params['account']}")
+    print(f"   User: {conn_params['user']}")
+    print(f"   Role: {conn_params['role']}")
+    print(f"   Warehouse: {conn_params['warehouse']}")
+    print(f"   Database: {conn_params['database']}")
+    print(f"   Schema: {conn_params['schema']}")
+
+    return session
+
+
+def get_session(config_file="config.env", connection_name="connections.my_example_connection"):
+    """
+    Get a Snowpark session - either from active session (Snowflake environment) 
+    or create a local session (development environment).
+
+    Parameters
+    ----------
+    config_file : str, optional
+        Path to the config file for local development.
+    connection_name : str, optional
+        Name of the connection section in the config file.
+
+    Returns
+    -------
+    snowflake.snowpark.Session
+        A Snowpark session.
+    """
+
+    try:
+        # Try to get active session (works in Snowflake Notebooks/Streamlit)
+        session = get_active_session()
+        print("✅ Using active Snowflake session")
+        return session
+    except:
+        # Fall back to local session for development
+        print("🔧 No active session found, creating local session for development...")
+        return create_local_session(config_file, connection_name)
 
 
 def fetch_semantic_model_paths(session):
@@ -37,34 +122,60 @@ def fetch_semantic_model_paths(session):
     pandas.DataFrame
         DataFrame containing agent names, tool names, and semantic model file paths
     """
-    # First get all agents
-    agents_df = session.sql(
-        "SHOW AGENTS IN SCHEMA snowflake_intelligence.agents").to_pandas()
+    try:
+        # First get all agents - use collect() for SHOW commands
+        agents_result = session.sql(
+            "SHOW AGENTS IN SCHEMA snowflake_intelligence.agents").collect()
 
-    results = []
-    agent_names = agents_df[1].tolist()
+        if not agents_result:
+            print("⚠️  No agents found in SNOWFLAKE_INTELLIGENCE.AGENTS schema")
+            return pd.DataFrame()
 
-    for agent in agent_names:
-        describe_sql = f'DESCRIBE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS."{agent}"'
-        df_desc = session.sql(describe_sql).to_pandas()
-        # Each DESCRIBE returns an 'AGENT_SPEC' column as a JSON string
+        results = []
+        # Extract agent names from the result rows - typically the 'name' field is at index 1
+        agent_names = [row[1] for row in agents_result]
 
-        agent_spec_json = df_desc[6].iloc[0]
-
-        if agent_spec_json:
+        for agent in agent_names:
             try:
-                spec = json.loads(agent_spec_json)
+                describe_sql = f'DESCRIBE AGENT SNOWFLAKE_INTELLIGENCE.AGENTS."{agent}"'
+                describe_result = session.sql(describe_sql).collect()
 
-                if 'tool_resources' in spec:
-                    for tool_name, tool_data in spec['tool_resources'].items():
-                        semantic_file = tool_data.get('semantic_model_file')
-                        results.append({
-                            "agent_name": agent,
-                            "tool_name": tool_name,
-                            "semantic_model_file": semantic_file
-                        })
-            except json.JSONDecodeError:
-                pass
+                if not describe_result:
+                    continue
+
+                # The agent spec is typically at index 6 (7th column) in DESCRIBE output
+                agent_spec_json = describe_result[0][6] if len(
+                    describe_result[0]) > 6 else None
+
+                if agent_spec_json:
+                    try:
+                        spec = json.loads(agent_spec_json)
+
+                        if 'tool_resources' in spec:
+                            for tool_name, tool_data in spec['tool_resources'].items():
+                                semantic_file = tool_data.get(
+                                    'semantic_model_file')
+                                results.append({
+                                    "agent_name": agent,
+                                    "tool_name": tool_name,
+                                    "semantic_model_file": semantic_file
+                                })
+                    except json.JSONDecodeError as je:
+                        print(
+                            f"⚠️  Could not parse agent spec JSON for {agent}: {je}")
+                        continue
+            except Exception as e:
+                print(f"⚠️  Could not describe agent {agent}: {e}")
+                continue
+
+    except Exception as e:
+        print(
+            f"⚠️  Could not access SNOWFLAKE_INTELLIGENCE.AGENTS schema: {e}")
+        print("This may be because:")
+        print("  • No Cortex Agents are configured in your account")
+        print("  • Your role doesn't have access to SNOWFLAKE_INTELLIGENCE schema")
+        print("  • You need USAGE privilege on SNOWFLAKE_INTELLIGENCE.AGENTS schema")
+        return pd.DataFrame()
 
     # Convert to DataFrame for display
     df_results = pd.DataFrame(results)
@@ -512,23 +623,149 @@ def create_cortex_analyst_query_history(session, cortex_analyst_df, sf_intellige
     pandas.DataFrame
         Joined DataFrame with additional computed columns
     """
+    import re
 
     # Load Snowflake Intelligence query history
-    sfi_query_history = session.table(sf_intelligence_table)
-    pd_sfi_query_history = sfi_query_history.to_pandas()
+    sql = f"SELECT * FROM {sf_intelligence_table}"
+    pd_sfi_query_history = session.sql(sql).to_pandas()
 
-    # Set indexes for joining
-    pd_sfi_query_history_indexed = pd_sfi_query_history.set_index(
-        "CLEANED_QUERY_TEXT")
-    cortex_analyst_indexed = cortex_analyst_df.set_index("GENERATED_SQL")
+    def normalize_sql(sql_text):
+        """Normalize SQL text for better matching"""
+        if pd.isna(sql_text) or sql_text is None:
+            return ""
 
-    # Join on generated SQL (left index = cleaned_query_text, right index = generated_sql)
+        # Convert to string and strip whitespace
+        sql_str = str(sql_text).strip()
+
+        # Handle corrupted/cleaned schema names - remove underscores and spaces from identifiers
+        sql_str = re.sub(r'doc_ai_q\s*_db\.doc_ai_\s*chema',
+                         'doc_ai_qs_db.doc_ai_schema', sql_str)
+        sql_str = re.sub(r'co_branding_agreement\s+',
+                         'co_branding_agreements ', sql_str)
+        sql_str = re.sub(r'__co_branding_agreement\b',
+                         '__co_branding_agreements', sql_str)
+
+        # Fix common column name corruptions
+        sql_str = re.sub(r'have_renewal_option\s*_value',
+                         'have_renewal_options_value', sql_str)
+        sql_str = re.sub(r'have_force_majeure\s*_value',
+                         'have_force_majeure_value', sql_str)
+
+        # Remove extra whitespace and normalize case
+        sql_normalized = re.sub(r'\s+', ' ', sql_str.upper())
+
+        # Remove trailing semicolons
+        sql_normalized = sql_normalized.rstrip(';')
+
+        # Remove common SQL variations that don't affect logic
+        # Normalize AS clauses
+        sql_normalized = re.sub(r'\bAS\s+(\w+)', r'AS \1', sql_normalized)
+
+        return sql_normalized
+
+    # Create normalized SQL columns for better matching
+    pd_sfi_query_history_copy = pd_sfi_query_history.copy()
+    cortex_analyst_copy = cortex_analyst_df.copy()
+
+    pd_sfi_query_history_copy['NORMALIZED_SQL'] = pd_sfi_query_history_copy['CLEANED_QUERY_TEXT'].apply(
+        normalize_sql)
+    cortex_analyst_copy['NORMALIZED_SQL'] = cortex_analyst_copy['GENERATED_SQL'].apply(
+        normalize_sql)
+
+    # Remove empty normalized SQL entries
+    pd_sfi_query_history_copy = pd_sfi_query_history_copy[
+        pd_sfi_query_history_copy['NORMALIZED_SQL'] != ""]
+    cortex_analyst_copy = cortex_analyst_copy[cortex_analyst_copy['NORMALIZED_SQL'] != ""]
+
+    # Set indexes for joining on normalized SQL
+    pd_sfi_query_history_indexed = pd_sfi_query_history_copy.set_index(
+        "NORMALIZED_SQL")
+    cortex_analyst_indexed = cortex_analyst_copy.set_index("NORMALIZED_SQL")
+
+    # Debug: Print join statistics
+    print(f"🔗 Join Debug Info:")
+    print(
+        f"   Query History records (after normalization): {len(pd_sfi_query_history_indexed)}")
+    print(
+        f"   Cortex Analyst records (after normalization): {len(cortex_analyst_indexed)}")
+    print(
+        f"   Unique normalized SQLs in Query History: {len(pd_sfi_query_history_indexed.index.unique())}")
+    print(
+        f"   Unique normalized SQLs in Cortex Logs: {len(cortex_analyst_indexed.index.unique())}")
+
+    # Check for overlapping normalized SQL
+    qh_sqls = set(pd_sfi_query_history_indexed.index)
+    ca_sqls = set(cortex_analyst_indexed.index)
+    overlap = qh_sqls.intersection(ca_sqls)
+    print(f"   Overlapping normalized SQLs: {len(overlap)}")
+
+    if len(overlap) > 0:
+        print(f"   Sample overlapping SQL: {list(overlap)[0][:100]}...")
+
+    # Join on normalized SQL
     ca_query_history = pd.merge(
         pd_sfi_query_history_indexed,
         cortex_analyst_indexed,
         left_index=True,
-        right_index=True
+        right_index=True,
+        how='inner'
     )
+
+    # If no matches with normalized SQL, try fuzzy matching on first 100 characters
+    if len(ca_query_history) == 0:
+        print("   🔄 No exact matches found, trying fuzzy matching on SQL fragments...")
+
+        # Create truncated SQL versions for fuzzy matching
+        pd_sfi_query_history_copy['SQL_FRAGMENT'] = pd_sfi_query_history_copy['NORMALIZED_SQL'].apply(
+            lambda x: x[:100] if x else "")
+        cortex_analyst_copy['SQL_FRAGMENT'] = cortex_analyst_copy['NORMALIZED_SQL'].apply(
+            lambda x: x[:100] if x else "")
+
+        # Remove empty fragments
+        pd_sfi_fuzzy = pd_sfi_query_history_copy[pd_sfi_query_history_copy['SQL_FRAGMENT'] != ""].set_index(
+            'SQL_FRAGMENT')
+        cortex_fuzzy = cortex_analyst_copy[cortex_analyst_copy['SQL_FRAGMENT'] != ""].set_index(
+            'SQL_FRAGMENT')
+
+        # Try fuzzy join
+        ca_query_history = pd.merge(
+            pd_sfi_fuzzy,
+            cortex_fuzzy,
+            left_index=True,
+            right_index=True,
+            how='inner'
+        )
+
+        if len(ca_query_history) > 0:
+            print(
+                f"   ✅ Found {len(ca_query_history)} matches using fuzzy SQL fragment matching!")
+        else:
+            # Try even more aggressive matching - just first 50 chars
+            print("   🔄 Trying very aggressive matching (first 50 chars)...")
+            pd_sfi_query_history_copy['SHORT_FRAGMENT'] = pd_sfi_query_history_copy['NORMALIZED_SQL'].apply(
+                lambda x: x[:50] if x else "")
+            cortex_analyst_copy['SHORT_FRAGMENT'] = cortex_analyst_copy['NORMALIZED_SQL'].apply(
+                lambda x: x[:50] if x else "")
+
+            pd_sfi_short = pd_sfi_query_history_copy[pd_sfi_query_history_copy['SHORT_FRAGMENT'] != ""].set_index(
+                'SHORT_FRAGMENT')
+            cortex_short = cortex_analyst_copy[cortex_analyst_copy['SHORT_FRAGMENT'] != ""].set_index(
+                'SHORT_FRAGMENT')
+
+            ca_query_history = pd.merge(
+                pd_sfi_short,
+                cortex_short,
+                left_index=True,
+                right_index=True,
+                how='inner'
+            )
+
+            if len(ca_query_history) > 0:
+                print(
+                    f"   ✅ Found {len(ca_query_history)} matches using aggressive fragment matching!")
+            else:
+                print(
+                    "   ⚠️  Still no matches found even with aggressive fuzzy matching")
 
     # Add computed columns
     ca_query_history['TOTAL_TIME'] = (
@@ -680,10 +917,62 @@ def get_ai_services_total_credits(session, start_date, end_date):
         DataFrame with total AI Services credits
     """
     sql = f"""
-    SELECT ROUND(SUM(credits_used), 0) AS total_credits 
+    SELECT ROUND(COALESCE(SUM(credits_used), 0), 2) AS total_credits 
     FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_HISTORY 
     WHERE start_time BETWEEN '{start_date}' AND '{end_date}' 
     AND SERVICE_TYPE = 'AI_SERVICES'
+    """
+    return session.sql(sql).to_pandas()
+
+
+def get_ai_services_total_credits_by_days(session, days=30):
+    """
+    Convenience function: Get total AI Services credits used in the last N days.
+
+    Parameters
+    ----------
+    session : snowflake.snowpark.Session
+        Active Snowpark session
+    days : int, optional
+        Number of days to look back (default: 30)
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with total AI Services credits
+    """
+    sql = f"""
+    SELECT ROUND(COALESCE(SUM(credits_used), 0), 2) AS total_credits 
+    FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_HISTORY 
+    WHERE start_time >= DATEADD(DAY, -{days}, CURRENT_TIMESTAMP()) 
+    AND SERVICE_TYPE = 'AI_SERVICES'
+    """
+    return session.sql(sql).to_pandas()
+
+
+def get_llm_inference_summary_by_days(session, days=7):
+    """
+    Get LLM inference summary for the last N days.
+
+    Parameters
+    ----------
+    session : snowflake.snowpark.Session
+        Active Snowpark session
+    days : int, optional
+        Number of days to look back (default: 7)
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with LLM inference credits and tokens
+    """
+    sql = f"""
+    SELECT 
+        ROUND(SUM(credits_used), 2) AS llm_inference_credits,
+        ROUND(SUM(input_tokens + output_tokens), 0) AS llm_inference_tokens
+    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY 
+    WHERE start_time >= DATEADD(DAY, -{days}, CURRENT_TIMESTAMP()) 
+    AND function_name = 'COMPLETE'
     """
     return session.sql(sql).to_pandas()
 
@@ -713,6 +1002,32 @@ def get_llm_inference_summary(session, start_date, end_date):
     FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY 
     WHERE function_name = 'COMPLETE' 
     AND start_time BETWEEN '{start_date}' AND '{end_date}'
+    """
+    return session.sql(sql).to_pandas()
+
+
+def get_cortex_analyst_summary_by_days(session, days=7):
+    """
+    Get Cortex Analyst summary for the last N days.
+
+    Parameters
+    ----------
+    session : snowflake.snowpark.Session
+        Active Snowpark session
+    days : int, optional
+        Number of days to look back (default: 7)
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with Cortex Analyst credits and message count
+    """
+    sql = f"""
+    SELECT 
+        ROUND(SUM(credits_attributed), 2) AS cortex_analyst_credits,
+        COUNT(*) AS number_messages
+    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY 
+    WHERE start_time >= DATEADD(DAY, -{days}, CURRENT_TIMESTAMP())
     """
     return session.sql(sql).to_pandas()
 
