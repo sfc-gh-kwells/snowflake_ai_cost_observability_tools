@@ -110,6 +110,92 @@ credits_by_model = get_credits_by_model(session, start_date, end_date)
 credits_by_warehouse = get_credits_by_warehouse(session, start_date, end_date)
 ```
 
+## Local Development & Testing
+
+### Running Streamlit Locally
+
+The toolkit supports local development and testing using your Snowflake connection. This is perfect for development, testing, and troubleshooting.
+
+#### Prerequisites
+
+1. **Python Environment**: Python 3.8+ with required dependencies
+   ```bash
+   pip install streamlit snowflake-snowpark-python pandas configparser
+   ```
+
+2. **Snowflake Connection**: Create a `config.env` file in the project directory with your connection details:
+   ```ini
+   [connections.my_example_connection]
+   account = "your-account.region"
+   user = "your-username"
+   password = "your-password"
+   role = "your-role"
+   warehouse = "your-warehouse"
+   database = "CORTEX_ANALYTICS"
+   schema = "PUBLIC"
+   ```
+
+#### Running the Streamlit App
+
+1. **Navigate to the project directory**:
+   ```bash
+   cd snowflake_ai_cost_observability_tools
+   ```
+
+2. **Start the Streamlit app**:
+   ```bash
+   streamlit run streamlit_app.py
+   ```
+
+3. **Access the dashboard**:
+   - Local URL: `http://localhost:8501`
+   - Network URL: `http://your-ip:8501` (for remote access)
+
+#### Expected Output
+
+When starting locally, you should see:
+```
+🔧 No active session found, creating local session for development...
+✅ Local Snowpark session created successfully
+   Account: your-account.region
+   User: your-username  
+   Role: your-role
+   Warehouse: your-warehouse
+   Database: CORTEX_ANALYTICS
+   Schema: PUBLIC
+
+  You can now view your Streamlit app in your browser.
+  Local URL: http://localhost:8501
+```
+
+#### Using Jupyter Notebooks for Development
+
+For interactive development and testing:
+
+1. **Use the development notebook**:
+   ```bash
+   jupyter notebook setup_local_dev.ipynb
+   ```
+
+2. **Or test functions directly**:
+   ```python
+   from utils import get_session, fetch_semantic_model_paths
+   
+   # Create local session
+   session = get_session()
+   
+   # Test functions
+   semantic_models = fetch_semantic_model_paths(session)
+   print(f"Found {len(semantic_models)} semantic models")
+   ```
+
+#### Troubleshooting
+
+- **Connection Issues**: Verify your `config.env` file has correct credentials
+- **Missing Data**: Run the setup scripts first to populate your Cortex Analyst logs
+- **Import Errors**: Ensure all dependencies are installed in your Python environment
+- **Kernel Restart**: In Jupyter notebooks, restart the kernel after modifying `utils.py`
+
 ## Streamlit Dashboard Deployment
 
 ### Deploy in Snowflake

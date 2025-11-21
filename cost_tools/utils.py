@@ -442,10 +442,10 @@ def create_sf_intelligence_query_history(session, target_table="cortex_analytics
         -- Clean the generated SQL for matching
         TRIM(REGEXP_REPLACE(
             REGEXP_REPLACE(
-                REGEXP_REPLACE(qh.query_text, '--[^\\n]*\\n', '\\n'),
-                '/\\*.*?\\*/', ' '
+                REGEXP_REPLACE(qh.query_text, '--[^\n]*\n', '\n'),
+                '/\*.*?\*/', ' '
             ),
-            '\\s+', ' '
+            '\s+', ' '
         )) AS cleaned_query_text
     FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY qh
     JOIN SNOWFLAKE.ACCOUNT_USAGE.QUERY_ATTRIBUTION_HISTORY qah 
@@ -495,10 +495,10 @@ def refresh_sf_intelligence_query_history(session, target_table="cortex_analytic
         -- Clean the generated SQL for matching
         TRIM(REGEXP_REPLACE(
             REGEXP_REPLACE(
-                REGEXP_REPLACE(qh.query_text, '--[^\\n]*\\n', '\\n'),
-                '/\\*.*?\\*/', ' '
+                REGEXP_REPLACE(qh.query_text, '--[^\n]*\n', '\n'),
+                '/\*.*?\*/', ' '
             ),
-            '\\s+', ' '
+            '\s+', ' '
         )) AS cleaned_query_text
     FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY qh
     JOIN SNOWFLAKE.ACCOUNT_USAGE.QUERY_ATTRIBUTION_HISTORY qah 
@@ -892,11 +892,6 @@ def cost_breakdown_by_semantic_model(ca_query_history_df):
     return cost_breakdown
 
 
-# =====================================================
-# LLM Usage Dashboard Functions
-# =====================================================
-# These functions are extracted from the LLM Usage Dashboard
-# Streamlit app for reusable analysis across applications
 
 def get_ai_services_total_credits(session, start_date, end_date):
     """
@@ -999,8 +994,7 @@ def get_llm_inference_summary(session, start_date, end_date):
     SELECT 
         ROUND(SUM(token_credits), 0) AS llm_inference_credits, 
         SUM(tokens) AS llm_inference_tokens 
-    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY 
-    WHERE function_name = 'COMPLETE' 
+    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY WHERE
     AND start_time BETWEEN '{start_date}' AND '{end_date}'
     """
     return session.sql(sql).to_pandas()
