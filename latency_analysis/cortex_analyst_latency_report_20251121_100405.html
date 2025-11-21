@@ -1,0 +1,376 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Cortex Analyst Latency Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+            .container { max-width: 1400px; margin: 0 auto; background: white; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            h1 { color: #29B5E8; border-bottom: 3px solid #29B5E8; padding-bottom: 10px; }
+            h2 { color: #666; margin-top: 40px; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+            h3 { color: #29B5E8; margin-top: 25px; }
+            table { border-collapse: collapse; width: 100%; margin-top: 15px; margin-bottom: 25px; }
+            th { background-color: #29B5E8; color: white; padding: 12px; text-align: left; font-weight: 600; }
+            td { border: 1px solid #ddd; padding: 10px; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            tr:hover { background-color: #f0f8ff; }
+            .metric { display: inline-block; margin: 20px 20px 20px 0; padding: 20px; background: #f0f8ff; border-radius: 8px; min-width: 200px; }
+            .metric-value { font-size: 32px; font-weight: bold; color: #29B5E8; }
+            .metric-label { font-size: 14px; color: #666; margin-top: 5px; }
+            .timestamp { color: #999; font-size: 12px; margin-top: 20px; padding: 10px; background: #f9f9f9; border-radius: 5px; }
+            .section { margin: 30px 0; padding: 20px; background: #fafafa; border-left: 4px solid #29B5E8; }
+            .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+        <h1>🏔️ Cortex Analyst Latency Report</h1>
+        <div class="timestamp">Generated: 2025-11-21 10:04:05</div>
+        
+        <div class="section">
+        <h2>📊 Cortex Analyst SQL Generation Analysis</h2>
+        <p><strong>Total Requests Analyzed:</strong> 12</p>
+        
+        <h3>Summary Metrics</h3>
+        <div class="metric">
+            <div class="metric-label">Avg SQL Generation</div>
+            <div class="metric-value">6.12s</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Median SQL Generation</div>
+            <div class="metric-value">4.42s</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Max SQL Generation</div>
+            <div class="metric-value">16.97s</div>
+        </div>
+        <div style="clear: both;"></div>
+    
+        <h3>Breakdown by Semantic Model</h3>
+        <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>SEMANTIC_MODEL_NAME</th>
+      <th>Request Count</th>
+      <th>Avg Latency (s)</th>
+      <th>Median Latency (s)</th>
+      <th>Max Latency (s)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td></td>
+      <td>2</td>
+      <td>9.91</td>
+      <td>9.91</td>
+      <td>14.20</td>
+    </tr>
+    <tr>
+      <td>@CUSTOMER_SUCCESS_DATA.SEMANTIC_MODELS.MODEL_STAGE/executive_review_semantic_model.yaml</td>
+      <td>9</td>
+      <td>5.61</td>
+      <td>4.23</td>
+      <td>16.97</td>
+    </tr>
+    <tr>
+      <td>@CORTEX_ANALYTICS.PUBLIC.SEMANTIC_MODELS/CORTEX_LOGS.yaml</td>
+      <td>1</td>
+      <td>3.12</td>
+      <td>3.12</td>
+      <td>3.12</td>
+    </tr>
+  </tbody>
+</table>
+        
+        <h3>Slowest Cortex Analyst Requests</h3>
+        <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>TIMESTAMP</th>
+      <th>REQUEST_ID</th>
+      <th>USER_QUESTION</th>
+      <th>GENERATED_SQL</th>
+      <th>ANALYST_LATENCY_SEC</th>
+      <th>USER_NAME</th>
+      <th>SEMANTIC_MODEL_NAME</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2025-11-19 22:20:55.276</td>
+      <td>1f8ab917-db54-4646-8474-2d6422154aa8</td>
+      <td>What is our total conversion revenue this year vs last year</td>
+      <td></td>
+      <td>16.973</td>
+      <td>KAITLYN</td>
+      <td>@CUSTOMER_SUCCESS_DATA.SEMANTIC_MODELS.MODEL_STAGE/executive_review_semantic_model.yaml</td>
+    </tr>
+    <tr>
+      <td>2025-11-19 17:33:35.574</td>
+      <td>4ce95517-26b4-4065-ba2d-c7850f3acfd1</td>
+      <td>total marketing spend and performance metrics for 2024, including trends and key insights</td>
+      <td>WITH __media_mix_modeling_agg AS (\n  SELECT\n    date,\n    cpa,\n    cpc,\n    cpm,\n    ctr,\n    frequency,\n    impressions,\n    reach,\n    roas,\n    total_spend\n  FROM cme.aisql.media_mix_modeling_agg\n), monthly_metrics AS (\n  SELECT\n    DATE_TRUNC('MONTH', date) AS month,\n    SUM(total_spend) AS monthly_spend,\n    AVG(cpa) AS avg_cpa,\n    AVG(cpc) AS avg_cpc,\n    AVG(cpm) AS avg_cpm,\n    AVG(ctr) AS avg_ctr,\n    AVG(frequency) AS avg_frequency,\n    SUM(impressions) AS total_impressions,\n    SUM(reach) AS total_reach,\n    AVG(roas) AS avg_roas\n  FROM __media_mix_modeling_agg\n  WHERE\n    DATE_PART('year', date) = 2024\n  GROUP BY\n    DATE_TRUNC('MONTH', date)\n), mom_trends AS (\n  SELECT\n    curr.month AS curr_month,\n    prev.month AS prev_month,\n    curr.monthly_spend AS curr_spend,\n    prev.monthly_spend AS prev_spend,\n    curr.monthly_spend - prev.monthly_spend AS spend_mom_change,\n    CASE\n      WHEN prev.monthly_spend &lt;&gt; 0\n      THEN (\n        curr.monthly_spend - prev.monthly_spend\n      ) / NULLIF(prev.monthly_spend, 0)\n    END AS spend_mom_pct_change,\n    curr.avg_cpa,\n    curr.avg_cpc,\n    curr.avg_cpm,\n    curr.avg_ctr,\n    curr.avg_frequency,\n    curr.total_impressions,\n    curr.total_reach,\n    curr.avg_roas\n  FROM monthly_metrics AS curr\n  LEFT JOIN monthly_metrics AS prev\n    ON curr.month = prev.month + INTERVAL '1 MONTH'\n)\nSELECT\n  curr_month,\n  curr_spend,\n  prev_month,\n  prev_spend,\n  spend_mom_change,\n  spend_mom_pct_change,\n  avg_cpa,\n  avg_cpc,\n  avg_cpm,\n  avg_ctr,\n  avg_frequency,\n  total_impressions,\n  total_reach,\n  avg_roas\nFROM mom_trends\nORDER BY\n  curr_month DESC NULLS LAST\n -- Generated by Cortex Analyst\n;</td>
+      <td>14.202</td>
+      <td>KAITLYN</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>2025-11-19 22:25:44.830</td>
+      <td>fc24470e-7526-4d7a-9021-7747383be101</td>
+      <td>cross-channel campaign performance by channel conversion revenue engagement metrics last 12 months</td>
+      <td></td>
+      <td>6.839</td>
+      <td>KAITLYN</td>
+      <td>@CUSTOMER_SUCCESS_DATA.SEMANTIC_MODELS.MODEL_STAGE/executive_review_semantic_model.yaml</td>
+    </tr>
+    <tr>
+      <td>2025-11-19 22:21:17.040</td>
+      <td>85f58d8c-5ef6-4996-a9f6-6fe216feb8a6</td>
+      <td>total conversion revenue this year compared to last year</td>
+      <td>WITH __conversions AS (\n  SELECT\n    conversion_date,\n    conversion_value\n  FROM customer_success_data.analytics.conversions\n), this_year AS (\n  SELECT\n    SUM(conversion_value) AS revenue,\n    COUNT(*) AS conversion_count,\n    MIN(conversion_date) AS min_date,\n    MAX(conversion_date) AS max_date\n  FROM __conversions\n  WHERE\n    YEAR(conversion_date) = YEAR(CURRENT_DATE) AND conversion_date &lt;= CURRENT_DATE\n), last_year AS (\n  SELECT\n    SUM(conversion_value) AS revenue,\n    COUNT(*) AS conversion_count,\n    MIN(conversion_date) AS min_date,\n    MAX(conversion_date) AS max_date\n  FROM __conversions\n  WHERE\n    YEAR(conversion_date) = YEAR(CURRENT_DATE) - 1\n)\nSELECT\n  YEAR(CURRENT_DATE) AS current_year,\n  YEAR(CURRENT_DATE) - 1 AS previous_year,\n  this_year.revenue AS this_year_revenue,\n  last_year.revenue AS last_year_revenue,\n  this_year.revenue - last_year.revenue AS absolute_change,\n  CASE\n    WHEN last_year.revenue &lt;&gt; 0\n    THEN (\n      this_year.revenue - last_year.revenue\n    ) / NULLIF(last_year.revenue, 0)\n  END AS percentage_change,\n  this_year.conversion_count AS this_year_conversions,\n  last_year.conversion_count AS last_year_conversions,\n  this_year.min_date AS this_year_start,\n  this_year.max_date AS this_year_end,\n  last_year.min_date AS last_year_start,\n  last_year.max_date AS last_year_end\nFROM this_year, last_year\n -- Generated by Cortex Analyst\n;</td>
+      <td>5.772</td>
+      <td>KAITLYN</td>
+      <td>@CUSTOMER_SUCCESS_DATA.SEMANTIC_MODELS.MODEL_STAGE/executive_review_semantic_model.yaml</td>
+    </tr>
+    <tr>
+      <td>2025-11-19 17:34:02.344</td>
+      <td>9884fada-eab6-4942-97e1-45e43b829c94</td>
+      <td>2024 platform performance metrics including ROAS, reach per dollar spent, impressions per dollar spent, and efficiency ratios for budget optimization</td>
+      <td>WITH __media_mix_modeling_agg AS (\n  SELECT\n    platform,\n    date,\n    cpa,\n    cpc,\n    cpm,\n    ctr,\n    impressions,\n    reach,\n    roas,\n    total_spend\n  FROM cme.aisql.media_mix_modeling_agg\n)\nSELECT\n  platform,\n  MIN(date) AS start_date,\n  MAX(date) AS end_date,\n  AVG(roas) AS avg_roas,\n  SUM(reach) / NULLIF(SUM(total_spend), 0) AS reach_per_dollar_spent,\n  SUM(impressions) / NULLIF(SUM(total_spend), 0) AS impressions_per_dollar_spent,\n  AVG(ctr) AS avg_ctr,\n  AVG(cpa) AS avg_cpa,\n  AVG(cpc) AS avg_cpc,\n  AVG(cpm) AS avg_cpm,\n  SUM(total_spend) AS total_spend\nFROM __media_mix_modeling_agg\nWHERE\n  DATE_PART('YEAR', date) = 2024\nGROUP BY\n  platform\nORDER BY\n  avg_roas DESC NULLS LAST\n -- Generated by Cortex Analyst\n;</td>
+      <td>5.614</td>
+      <td>KAITLYN</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>2025-11-19 22:23:35.781</td>
+      <td>adc011bc-43fd-401a-a0c1-03a001a8e842</td>
+      <td>unique customers from attribution data</td>
+      <td>WITH __attributions AS (\n  SELECT\n    customer_id,\n    touchpoint_date\n  FROM customer_success_data.analytics.attributions\n)\nSELECT\n  COUNT(DISTINCT customer_id) AS unique_customers,\n  MIN(touchpoint_date) AS start_date,\n  MAX(touchpoint_date) AS end_date\nFROM __attributions\nWHERE\n  touchpoint_date &lt;= CURRENT_DATE\n -- Generated by Cortex Analyst\n;</td>
+      <td>4.606</td>
+      <td>KAITLYN</td>
+      <td>@CUSTOMER_SUCCESS_DATA.SEMANTIC_MODELS.MODEL_STAGE/executive_review_semantic_model.yaml</td>
+    </tr>
+    <tr>
+      <td>2025-11-19 22:26:07.924</td>
+      <td>f3433fb2-5dba-4201-8587-147374c4252e</td>
+      <td>engagement metrics by channel open rates click through rates last 12 months</td>
+      <td>WITH __historical_engagement AS (\n  SELECT\n    channel,\n    engagement_date,\n    engagement_score,\n    messages_sent,\n    messages_opened,\n    messages_clicked\n  FROM customer_success_data.analytics.historical_engagement\n)\nSELECT\n  channel,\n  SUM(messages_sent) AS total_messages_sent,\n  SUM(messages_opened) AS total_messages_opened,\n  SUM(messages_clicked) AS total_messages_clicked,\n  (\n    CAST(SUM(messages_opened) AS FLOAT) / NULLIF(NULLIF(SUM(messages_sent), 0), 0)\n  ) * 100 AS open_rate,\n  (\n    CAST(SUM(messages_clicked) AS FLOAT) / NULLIF(NULLIF(SUM(messages_opened), 0), 0)\n  ) * 100 AS click_through_rate,\n  AVG(engagement_score) AS avg_engagement_score,\n  MIN(engagement_date) AS start_date,\n  MAX(engagement_date) AS end_date,\n  COUNT(*) AS engagement_count\nFROM __historical_engagement\nWHERE\n  engagement_date &gt;= DATEADD(MONTH, -12, CURRENT_DATE)\n  AND engagement_date &lt;= CURRENT_DATE\nGROUP BY\n  channel\nORDER BY\n  open_rate DESC NULLS LAST\n -- Generated by Cortex Analyst\n;</td>
+      <td>4.226</td>
+      <td>KAITLYN</td>
+      <td>@CUSTOMER_SUCCESS_DATA.SEMANTIC_MODELS.MODEL_STAGE/executive_review_semantic_model.yaml</td>
+    </tr>
+    <tr>
+      <td>2025-11-19 22:23:10.608</td>
+      <td>856c2a8d-5768-4f89-a365-8c558f13594c</td>
+      <td>list of all customers we have data for</td>
+      <td></td>
+      <td>3.839</td>
+      <td>KAITLYN</td>
+      <td>@CUSTOMER_SUCCESS_DATA.SEMANTIC_MODELS.MODEL_STAGE/executive_review_semantic_model.yaml</td>
+    </tr>
+    <tr>
+      <td>2025-11-19 22:25:54.718</td>
+      <td>42fbd1ac-a40c-478f-bdb6-906adf0bc5ad</td>
+      <td>channel performance conversion revenue and count by channel last 12 months</td>
+      <td>WITH __conversions AS (\n  SELECT\n    channel,\n    conversion_date,\n    conversion_value\n  FROM customer_success_data.analytics.conversions\n)\nSELECT\n  channel,\n  COUNT(*) AS conversion_count,\n  SUM(conversion_value) AS total_conversion_revenue,\n  AVG(conversion_value) AS avg_conversion_value,\n  MIN(conversion_date) AS min_conversion_date,\n  MAX(conversion_date) AS max_conversion_date\nFROM __conversions\nWHERE\n  conversion_date &gt;= DATEADD(MONTH, -12, CURRENT_DATE)\n  AND conversion_date &lt;= CURRENT_DATE\nGROUP BY\n  channel\nORDER BY\n  total_conversion_revenue DESC NULLS LAST\n -- Generated by Cortex Analyst\n;</td>
+      <td>3.188</td>
+      <td>KAITLYN</td>
+      <td>@CUSTOMER_SUCCESS_DATA.SEMANTIC_MODELS.MODEL_STAGE/executive_review_semantic_model.yaml</td>
+    </tr>
+    <tr>
+      <td>2025-11-14 20:12:06.628</td>
+      <td>a49a846a-5921-4720-9664-7801ed373814</td>
+      <td>what are my 10 slowest queries</td>
+      <td>WITH __sf_intelligence_query_history AS (\n  SELECT\n    query_id,\n    user_name,\n    warehouse_name,\n    start_time,\n    total_elapsed_time\n  FROM cortex_analytics.public.sf_intelligence_query_history\n)\nSELECT\n  query_id,\n  user_name,\n  warehouse_name,\n  start_time,\n  total_elapsed_time,\n  MIN(start_time) OVER () AS start_date,\n  MAX(start_time) OVER () AS end_date\nFROM __sf_intelligence_query_history\nORDER BY\n  total_elapsed_time DESC NULLS LAST\nLIMIT 10\n -- Generated by Cortex Analyst\n;</td>
+      <td>3.115</td>
+      <td>KAITLYN</td>
+      <td>@CORTEX_ANALYTICS.PUBLIC.SEMANTIC_MODELS/CORTEX_LOGS.yaml</td>
+    </tr>
+  </tbody>
+</table>
+        </div>
+    
+        <div class="section">
+        <h2>⚡ SQL Execution Analysis</h2>
+        <p><strong>Total SQL Executions Analyzed:</strong> 74</p>
+        
+        <h3>Summary Metrics</h3>
+        <div class="metric">
+            <div class="metric-label">Avg SQL Execution</div>
+            <div class="metric-value">2.91s</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Median SQL Execution</div>
+            <div class="metric-value">0.38s</div>
+        </div>
+        <div class="metric">
+            <div class="metric-label">Max SQL Execution</div>
+            <div class="metric-value">19.60s</div>
+        </div>
+        <div style="clear: both;"></div>
+        
+            <h3>Query Tag Distribution</h3>
+            <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Query Tag</th>
+      <th>Count</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td></td>
+      <td>63</td>
+    </tr>
+    <tr>
+      <td>snowflake-intelligence</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <td>{"StreamlitEngine":"ExecuteStreamlit","StreamlitName":"CORTEX_AGENTS_DEMO.PUBLIC.AS7XRUND81XZWYYY","ChildQuery":true}</td>
+      <td>5</td>
+    </tr>
+  </tbody>
+</table>
+            
+            <h3>Warehouse Distribution</h3>
+            <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>WAREHOUSE_NAME</th>
+      <th>Query Count</th>
+      <th>Avg Latency (s)</th>
+      <th>Median Latency (s)</th>
+      <th>Max Latency (s)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AICOLLEGE</td>
+      <td>50</td>
+      <td>0.82</td>
+      <td>0.30</td>
+      <td>9.43</td>
+    </tr>
+    <tr>
+      <td>CORTEX_ANALYST_WH</td>
+      <td>18</td>
+      <td>9.47</td>
+      <td>8.41</td>
+      <td>19.60</td>
+    </tr>
+    <tr>
+      <td>COMPUTE_WH</td>
+      <td>6</td>
+      <td>0.62</td>
+      <td>0.58</td>
+      <td>0.95</td>
+    </tr>
+  </tbody>
+</table>
+            
+            <h3>Slowest SQL Executions</h3>
+            <table border="1" class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>START_TIME</th>
+      <th>QUERY_ID</th>
+      <th>QUERY_TAG</th>
+      <th>EXECUTION_LATENCY_SEC</th>
+      <th>USER_NAME</th>
+      <th>WAREHOUSE_NAME</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2025-11-21 07:18:51.145000-08:00</td>
+      <td>01c08ab6-070f-fe7c-0003-876b03dbaf3e</td>
+      <td></td>
+      <td>19.603</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 07:18:56.416000-08:00</td>
+      <td>01c08ab6-0710-066b-0003-876b03dc1aee</td>
+      <td></td>
+      <td>17.651</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 07:36:02.975000-08:00</td>
+      <td>01c08ac8-0710-0987-0003-876b03dd5602</td>
+      <td></td>
+      <td>14.410</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 07:21:51.551000-08:00</td>
+      <td>01c08ab9-0710-0622-0003-876b03db9f9a</td>
+      <td></td>
+      <td>13.799</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 07:06:57.433000-08:00</td>
+      <td>01c08aaa-0710-08f6-0003-876b03dcf606</td>
+      <td></td>
+      <td>11.785</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 09:40:58.743000-08:00</td>
+      <td>01c08b44-0710-02ad-0003-876b03de7046</td>
+      <td></td>
+      <td>10.190</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 07:15:57.187000-08:00</td>
+      <td>01c08ab3-0710-0883-0003-876b03dbfe1a</td>
+      <td></td>
+      <td>9.681</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 09:44:55.119000-08:00</td>
+      <td>01c08b48-0710-08f6-0003-876b03dcfba2</td>
+      <td>{"StreamlitEngine":"ExecuteStreamlit","StreamlitName":"CORTEX_AGENTS_DEMO.PUBLIC.AS7XRUND81XZWYYY","ChildQuery":true}</td>
+      <td>9.428</td>
+      <td>KAITLYN</td>
+      <td>AICOLLEGE</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 07:24:24.322000-08:00</td>
+      <td>01c08abc-0710-0883-0003-876b03dbfe6e</td>
+      <td></td>
+      <td>9.112</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+    <tr>
+      <td>2025-11-21 07:13:26.596000-08:00</td>
+      <td>01c08ab1-0710-0969-0003-876b03dd44ba</td>
+      <td></td>
+      <td>8.576</td>
+      <td>KAITLYN</td>
+      <td>CORTEX_ANALYST_WH</td>
+    </tr>
+  </tbody>
+</table>
+            </div>
+        <div class="warning">
+        <strong>⚠️ Note on Combined Analysis:</strong> Joining Cortex Analyst logs with Query History by SQL text matching can be inaccurate. 
+        The sections above provide separate, reliable analysis of SQL generation and execution latency.
+        </div>
+        
+        </div>
+    </body>
+    </html>
+    
